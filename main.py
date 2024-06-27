@@ -1,11 +1,25 @@
+import pandas as pd
+import logging
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader, TensorDataset
 
-# TODO: Load the Real and Fake News dataset from Kaggle
-# Assume 'texts' is a list containing the news articles and 'labels' is a list containing corresponding labels (0 for real, 1 for fake)
+# Load the Real and Fake News dataset from Kaggle
+real_news_df = pd.read_csv("True.csv")
+fake_news_df = pd.read_csv("Fake.csv")
+
+# "text" column contains the news articles
+real_news_texts = real_news_df["text"]
+real_news_labels = [0] * len(real_news_texts)  # Label real news as 0
+
+fake_news_texts = fake_news_df["text"]
+fake_news_labels = [1] * len(fake_news_texts)  # Label fake news as 1
+
+# Combine data from both sources
+texts = pd.concat([real_news_texts, fake_news_texts]).tolist()
+labels = real_news_labels + fake_news_labels
 
 # Split the dataset into training and testing sets
 train_texts, test_texts, train_labels, test_labels = train_test_split(texts, labels, test_size=0.2, random_state=42)
@@ -33,15 +47,24 @@ loss_fn = torch.nn.CrossEntropyLoss()
 # Training loop
 num_epochs = 3  # Can be adjusted
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+
+# Training loop with logging
 for epoch in range(num_epochs):
     model.train()
-    for batch in train_loader:
+    for batch_idx, batch in enumerate(train_loader):
         optimizer.zero_grad()
         input_ids, attention_mask, labels = batch
         outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
         loss = outputs.loss
         loss.backward()
         optimizer.step()
+
+        if batch_idx % 100 == 0:  # Log every 100 batches
+            logging.info(f"Epoch: {epoch + 1}/{num_epochs}, Batch: {batch_idx}/{len(train_loader)}, Loss: {loss.item()}")
+
+logging.info("Training complete.")
 
 # Testing loop
 model.eval()
@@ -58,3 +81,6 @@ with torch.no_grad():
 # Calculate accuracy
 accuracy = accuracy_score(test_labels, all_preds)
 print(f"Accuracy: {accuracy * 100:.2f}%")
+
+# TODO: test for training data leaks or any other indicators of overfitting
+# TODO: add a confusion matrix and perform cross-validation
