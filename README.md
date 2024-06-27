@@ -4,3 +4,7 @@ This project implements a fake news detection model using BERT. The model classi
 Fine-tuned the BERT model, utilized GPU acceleration for training, and optimized hyperparameters to enhance model performance. 
 
 Testing accuracy of 98%. 
+
+What's next:
+1. Test for training data leaks or any other indicators of overfitting
+2. Add a confusion matrix and perform cross-validation tests
